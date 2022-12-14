@@ -205,7 +205,7 @@ func SampleWorkflowWithMutex(
 
 	// emulate long running process
 	logger.Info("critical operation started")
-	_ = workflow.Sleep(ctx, 10*time.Second)
+	_ = workflow.Sleep(ctx, 500*time.Millisecond)
 	logger.Info("critical operation finished")
 
 	_ = unlockFunc()

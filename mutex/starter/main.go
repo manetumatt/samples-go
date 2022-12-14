@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/pborman/uuid"
 	"go.temporal.io/sdk/client"
@@ -21,28 +23,48 @@ func main() {
 	defer c.Close()
 
 	// This workflow ID can be user business logic identifier as well.
-	resourceID := uuid.New()
-	workflow1Options := client.StartWorkflowOptions{
-		ID:        "SampleWorkflow1WithMutex_" + uuid.New(),
-		TaskQueue: "mutex",
+	resourceID := "MTRID"
+
+	ctx := context.Background()
+
+	for x := 1; x <= 5; x++ {
+
+		id := fmt.Sprintf("SWF%d_%v", x, uuid.New())
+		workflow1Options := client.StartWorkflowOptions{
+			ID:        id,
+			TaskQueue: "mutex",
+		}
+
+		we, err := c.ExecuteWorkflow(ctx, workflow1Options, mutex.SampleWorkflowWithMutex, resourceID)
+		if err != nil {
+			log.Fatalln("Unable to execute workflow", err)
+		} else {
+			log.Println("Started workflow", "WorkflowID", we.GetID(), "RunID", we.GetRunID())
+		}
+
+		time.Sleep(time.Millisecond * 50)
 	}
 
-	workflow2Options := client.StartWorkflowOptions{
-		ID:        "SampleWorkflow2WithMutex_" + uuid.New(),
-		TaskQueue: "mutex",
+	log.Println("Sleep 10 seconds before round 2")
+	time.Sleep(10 * time.Second)
+	resourceID = "MTRID2"
+
+	for x := 1; x <= 5; x++ {
+
+		id := fmt.Sprintf("SWF%d_%v", x, uuid.New())
+		workflow1Options := client.StartWorkflowOptions{
+			ID:        id,
+			TaskQueue: "mutex",
+		}
+
+		we, err := c.ExecuteWorkflow(ctx, workflow1Options, mutex.SampleWorkflowWithMutex, resourceID)
+		if err != nil {
+			log.Fatalln("Unable to execute workflow", err)
+		} else {
+			log.Println("Started workflow", "WorkflowID", we.GetID(), "RunID", we.GetRunID())
+		}
+
+		time.Sleep(time.Millisecond * 50)
 	}
 
-	we, err := c.ExecuteWorkflow(context.Background(), workflow1Options, mutex.SampleWorkflowWithMutex, resourceID)
-	if err != nil {
-		log.Fatalln("Unable to execute workflow1", err)
-	} else {
-		log.Println("Started workflow1", "WorkflowID", we.GetID(), "RunID", we.GetRunID())
-	}
-
-	we, err = c.ExecuteWorkflow(context.Background(), workflow2Options, mutex.SampleWorkflowWithMutex, resourceID)
-	if err != nil {
-		log.Fatalln("Unable to execute workflow2", err)
-	} else {
-		log.Println("Started workflow2", "WorkflowID", we.GetID(), "RunID", we.GetRunID())
-	}
 }
